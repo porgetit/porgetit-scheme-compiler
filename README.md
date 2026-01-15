@@ -65,7 +65,18 @@ Ejecutable Nativo (x86-64, ARM, etc.)
 - **Orquestación del Pipeline**: Parsear → Transformar → Elevar → Codegen → Ensamblar → Enlazar
 - **Dependencias de Toolchain**: `llvmlite` (emisión IR), `gcc` (enlazado)
 
-## Capacidades Actuales
+## Capacidades Actuales (Estado de la Suite de Pruebas)
+
+El compilador cuenta con una batería de pruebas automatizada dividida en niveles:
+
+| Nivel | Característica            | Estado                               |
+| :---- | :------------------------ | :----------------------------------- |
+| **1** | **Aritmética Básica**     | ✅ PASA                              |
+| **2** | **Definiciones Globales** | ❌ PENDIENTE (`define` de variables) |
+| **3** | **Control de Flujo**      | ✅ PASA (`if` anidados)              |
+| **4** | **Funciones**             | ✅ PASA (Definición y Llamada)       |
+| **5** | **Recursión**             | ✅ PASA (Factorial, Fibonacci)       |
+| **6** | **Lambdas/Clausuras**     | ❌ EN DESARROLLO                     |
 
 ✅ **Características Funcionando**:
 
@@ -74,22 +85,6 @@ Ejecutable Nativo (x86-64, ARM, etc.)
 - Operaciones aritméticas y de comparación
 - Llamadas a funciones (directas y recursivas)
 - Retornos en posición de cola apropiados (LLVM optimiza tail calls con `-O2`)
-
-✅ **Compila Exitosamente**:
-
-```scheme
-(define (fib n)
-    (if (< n 2)
-        n
-        (+ (fib (- n 1)) (fib (- n 2)))))
-
-(fib 10)  ; → 55.0
-```
-
-⚠️ **En Progreso**:
-
-- Definiciones de funciones anidadas (clausuras)
-- Ámbito de variables locales más allá de parámetros de función
 
 ## Instalación y Uso
 
@@ -133,6 +128,17 @@ cat output.ll
 # Ejecutar binario compilado
 ./output
 ```
+
+### Ejecución de Pruebas
+
+Para ejecutar la batería de pruebas completa y verificar el estado del compilador:
+
+```bash
+# Asegúrate de estar en el venv
+python run_tests.py
+```
+
+El script `run_tests.py` ejecutará todos los niveles en `scms/` y comparará la salida con los resultados esperados definidos en los comentarios de cada archivo.
 
 ## Diseño del Sistema de Tipos (MVP)
 
@@ -192,5 +198,5 @@ Uso educativo/investigación. Ver guías institucionales para integridad académ
 ---
 
 **Autor**: Kevin Esguerra Cardona
-**Estado**: Desarrollo Activo (Fase Lambda Lifting)  
+**Estado**: Desarrollo Activo (Fase Lambda Lifting & Test Suite)  
 **Última Actualización**: 2026-01-15
