@@ -1,36 +1,30 @@
-"""Punto de entrada de la aplicacion GUI con PyWebView."""
-from __future__ import annotations
-
+from lark import Lark
 import sys
-from pathlib import Path
 
-import webview
+def main():
+    with open('lisp.lark', 'r') as f:
+        grammar = f.read()
 
-from backend.api import BackendAPI
+    parser = Lark(grammar, start='start', parser='lalr')
 
+    # Example code or from CLI args
+    code = "(defun fib (n) (if (< n 2) n (+ (fib (- n 1)) (fib (- n 2)))))"
+    
+    if len(sys.argv) > 1:
+        # Check if file exists, otherwise treat as code
+        if sys.argv[1].endswith('.lisp') or sys.argv[1].endswith('.scm'):
+             with open(sys.argv[1], 'r') as f:
+                 code = f.read()
+        else:
+            code = sys.argv[1]
 
-def _resource_path(relative: str) -> Path:
-    """Localiza recursos tanto en modo normal como congelado (PyInstaller)."""
-    base = Path(getattr(sys, "_MEIPASS", Path(__file__).parent))
-    return base / relative
-
-
-def launch() -> None:
-    project_root = _resource_path("")  # raiz del proyecto o temp en _MEIPASS
-    index_html = _resource_path("frontend/index.html")
-    api = BackendAPI(project_root)
-    window = webview.create_window(
-        "Mini PHP Compiler GUI",
-        url=index_html.as_uri(),
-        js_api=api,
-        width=1280,
-        height=860,
-        min_size=(1024, 700),
-    )
-    api.bind_window(window)
-    # Nota: debug=False evita el ruido en consola generado por WebView2/pywebview.
-    webview.start(debug=False)
-
+    print(f"Parsing Code:\n{code}\n")
+    try:
+        tree = parser.parse(code)
+        print("Parse Tree:")
+        print(tree.pretty())
+    except Exception as e:
+        print(f"Error parsing: {e}")
 
 if __name__ == "__main__":
-    launch()
+    main()
