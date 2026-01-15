@@ -1,24 +1,268 @@
-?start: expr
+// R5RS Scheme Grammar for Lark
 
-?expr: atom
-     | list
-     | quoted
+// Based on https://www-sop.inria.fr/indes/fp/Bigloo/doc/r5rs-10.html
 
-list: "(" expr* ")"
-quoted: "'" expr
+start: program
 
-?atom: SIGNED_NUMBER -> number
-     | ESCAPED_STRING -> string
-     | BOOL -> bool
-     | SYMBOL -> symbol
+// 7.1.6 Programs and definitions
 
-BOOL: "#t" | "#f"
-// Symbols can contain letters, numbers, and many special characters, but start with non-digit usually
-// Simplified regex for symbols
-SYMBOL: /[a-zA-Z_\+\-\*\/%<>=?!][a-zA-Z0-9_\+\-\*\/%<>=?!]*/
+program: command_or_definition*
+
+?command_or_definition: command
+     | definition
+     | syntax_definition
+     | "(" "begin" command_or_definition+ ")"
+
+?command: expression
+
+definition: "(" DEFINE variable expression ")"
+     | "(" DEFINE "(" variable def_formals ")" body ")"
+     | "(" "begin" definition* ")"
+
+def_formals: variable*
+     | variable* "." variable
+
+syntax_definition: "(" "define-syntax" variable transformer_spec ")"
+
+// 7.1.3 Expressions
+
+?expression: variable
+     | literal
+     | procedure_call
+     | lambda_expression
+     | conditional
+     | assignment
+     | derived_expression
+     | macro_use
+     | macro_block
+     | quasiquotation_start
+
+?literal: quotation
+     | self_evaluating
+
+self_evaluating: boolean
+     | number
+     | character
+     | string
+
+quotation: "'" datum
+     | "(" "quote" datum ")"
+
+procedure_call: "(" operator operand* ")"
+
+?operator: expression
+
+?operand: expression
+
+lambda_expression: "(" "lambda" formals body ")"
+
+formals: "(" variable* ")"
+     | variable
+     | "(" variable+ "." variable ")"
+
+body: definition* sequence
+
+sequence: command* expression
+
+conditional: "(" "if" test consequent alternate? ")"
+
+?test: expression
+
+?consequent: expression
+
+?alternate: expression
+
+assignment: "(" "set!" variable expression ")"
+
+derived_expression: "(" "cond" cond_clause+ ")"
+     | "(" "cond" cond_clause* "(" "else" sequence ")" ")"
+     | "(" "case" expression case_clause+ ")"
+     | "(" "case" expression case_clause* "(" "else" sequence ")" ")"
+     | "(" "and" test* ")"
+     | "(" "or" test* ")"
+     | "(" "let" "(" binding_spec* ")" body ")"
+     | "(" "let" variable "(" binding_spec* ")" body ")"
+     | "(" "let*" "(" binding_spec* ")" body ")"
+     | "(" "letrec" "(" binding_spec* ")" body ")"
+     | "(" "begin" sequence ")"
+     | "(" "do" "(" iteration_spec* ")" "(" test do_result? ")" command* ")"
+     | "(" "delay" expression ")"
+
+cond_clause: "(" test sequence ")"
+     | "(" test ")"
+     | "(" test "=>" recipient ")"
+
+?recipient: expression
+
+case_clause: "(" "(" datum* ")" sequence ")"
+
+binding_spec: "(" variable expression ")"
+
+iteration_spec: "(" variable init step? ")"
+
+?init: expression
+
+?step: expression
+
+?do_result: sequence
+
+macro_use: "(" variable datum* ")"
+
+macro_block: "(" "let-syntax" "(" syntax_spec* ")" body ")"
+     | "(" "letrec-syntax" "(" syntax_spec* ")" body ")"
+
+syntax_spec: "(" variable transformer_spec ")"
+
+// 7.1.5 Transformers
+
+transformer_spec: "(" "syntax-rules" "(" identifier* ")" syntax_rule* ")"
+
+syntax_rule: "(" pattern template ")"
+
+pattern: pattern_identifier
+     | "(" pattern* ")"
+     | "(" pattern+ "." pattern ")"
+     | "(" pattern* pattern "..." ")"
+     | "#(" pattern* ")"
+     | "#(" pattern* pattern "..." ")"
+     | pattern_datum
+
+pattern_datum: string
+     | character
+     | boolean
+     | number
+
+template: pattern_identifier
+     | "(" template_element* ")"
+     | "(" template_element+ "." template ")"
+     | "#(" template_element* ")"
+     | template_datum
+
+template_element: template
+     | template "..."
+
+template_datum: pattern_datum
+
+pattern_identifier: variable
+
+// 7.1.4 Quasiquotations (Simplified for parser as strict nesting is hard in regex-based lexers without logic, generally handled as structure)
+
+// We defined it as an expression option
+
+quasiquotation_start: "`" qq_template
+     | "(" "quasiquote" qq_template ")"
+
+?qq_template: simple_datum
+     | list_qq_template
+     | vector_qq_template
+     | unquotation
+
+list_qq_template: "(" qq_template_or_splice* ")"
+     | "(" qq_template_or_splice+ "." qq_template ")"
+     | "'" qq_template
+     | quasiquotation_start
+
+vector_qq_template: "#(" qq_template_or_splice* ")"
+
+unquotation: "," qq_template
+     | "(" "unquote" qq_template ")"
+
+qq_template_or_splice: qq_template
+     | splicing_unquotation
+
+splicing_unquotation: ",@" qq_template
+     | "(" "unquote-splicing" qq_template ")"
+
+// 7.1.2 External representations (Datum)
+
+?datum: simple_datum
+     | compound_datum
+
+?simple_datum: boolean
+     | number
+     | character
+     | string
+     | symbol
+
+?compound_datum: list
+     | vector
+
+list: "(" datum* ")"
+     | "(" datum+ "." datum ")"
+     | abbreviation
+
+abbreviation: abbrev_prefix datum
+
+abbrev_prefix: "'"
+     | "`"
+     | ","
+     | ",@"
+
+vector: "#(" datum* ")"
+
+variable: identifier
+
+// 7.1.1 Lexical Structure
+
+// Boolean
+
+boolean: "#t"
+     | "#f"
+     | "#T"
+     | "#F"
+
+// Character
+
+character: /#\\[a-zA-Z]+/
+     | /#\\./
+
+// String
+
+string: /"(?:[^"\\]|\\.)*"/
+
+// Keywords
+
+DEFINE: "define"
+
+// Identifier
+
+// <identifier> --> <initial> <subsequent>* | <peculiar identifier>
+
+// <initial> --> <letter> | <special initial>
+
+// <special initial> --> ! | $ | % | & | * | / | : | < | = | > | ? | ^ | _ | ~
+
+// <subsequent> --> <initial> | <digit> | <special subsequent>
+
+// <special subsequent> --> + | - | . | @
+
+// <peculiar identifier> --> + | - | ...
+
+// Simplified to avoid complex regex nesting issues in one go.
+
+// Initial chars: a-z A-Z ! $ % & * / : < = > ? ^ _ ~
+
+// Subsequent: initial + 0-9 + . @ - +
+
+IDENTIFIER: /[a-zA-Z!$%&*\/:<=>?^_~][a-zA-Z0-9!$%&*\/:<=>?^_~+\-.@]*/
+     | /[+\-](?![a-zA-Z0-9!$%&*\/:<=>?^_~+\-.@])/
+     | /\.\.\./
+
+identifier: IDENTIFIER
+
+symbol: identifier
+
+// Number (Simplified regex for common cases, full R5RS number parsing is huge)
+
+// Supports integers, floats, and rationals (1/2)
+
+number: SIGNED_NUMBER
+     | /[-+]?\d+\/\d+/
 
 %import common.SIGNED_NUMBER
-%import common.ESCAPED_STRING
+
 %import common.WS
+
 %ignore WS
+
 %ignore /;.*/
