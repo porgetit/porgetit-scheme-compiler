@@ -176,10 +176,6 @@ Aunque la transpilación a C (como Chicken Scheme) es más simple, LLVM IR direc
 - **llvmlite** (0.46.0+): Bindings de Python para LLVM
 - **gcc/clang**: Enlazador del sistema (estándar en Unix, instalar MinGW en Windows)
 
-## Evolución del Proyecto
-
-Este proyecto evolucionó desde un experimento de compilador PHP a una implementación completa de Lisp. El código retiene artefactos históricos (nombre de directorio `mini-php-compiler`) pero ahora es exclusivamente un compilador Scheme.
-
 ## Contribuciones
 
 Este es un proyecto educativo/experimental. Áreas clave para contribución:
