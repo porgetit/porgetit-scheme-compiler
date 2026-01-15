@@ -191,6 +191,6 @@ Uso educativo/investigación. Ver guías institucionales para integridad académ
 
 ---
 
-**Autor**: Kevin  
+**Autor**: Kevin Esguerra Cardona
 **Estado**: Desarrollo Activo (Fase Lambda Lifting)  
 **Última Actualización**: 2026-01-15
