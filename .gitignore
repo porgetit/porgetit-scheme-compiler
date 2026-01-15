@@ -1,3 +1,28 @@
-.venv
+# Python
 __pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
 venv/
+.venv
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Compiler Output
+*.ll       # LLVM IR files
+*.o        # Object files
+*.out      # Generic output files
+output     # Default executable name
+a.out      # GCC default output
